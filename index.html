@@ -197,7 +197,7 @@
         <div class="text-slate-300 font-semibold flex justify-between items-center">
           <span class="font-sans text-xs">Segurança dos Dados</span>
           <span id="storage-status" class="text-[10px] text-emerald-400 flex items-center gap-1 font-mono">
-            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Nuvem
+            <span class="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Salvo
           </span>
         </div>
         <div class="flex gap-1.5 pt-0.5">
@@ -1133,7 +1133,7 @@
                 <th class="py-2.5 px-3">Data</th>
               </tr>
             </thead>
-            <tbody id="tabela-faturados-dre" class="divide-y border-slate-800/60 text-slate-300">
+            <tbody id="tabela-faturados-dre" class="divide-y divide-slate-800/60 text-slate-300">
             </tbody>
             <tfoot id="tfoot-faturados-dre" class="border-t-2 border-slate-700/80 font-bold">
             </tfoot>
@@ -1167,18 +1167,13 @@
 
     // MATERIAIS DIRETOS INICIAIS
     const MATERIAIS_DIRETOS_INICIAIS = [
-      { id: 'm1', nome: 'Adesivo Maves Studio 3D', categoria: 'Brindes', custoUnitario: 0.25 },
-      { id: 'm2', nome: 'Saco Adesivo 7x9 + 3cm (PP)', categoria: 'Embalagens', custoUnitario: 0.20 },
-      { id: 'm3', nome: 'Saco Adesivo 8x9 + 3cm (PP)', categoria: 'Embalagens', custoUnitario: 0.25 },
-      { id: 'm4', nome: 'Saco Adesivo 14x16 + 5cm', categoria: 'Embalagens', custoUnitario: 0.35 },
-      { id: 'm5', nome: 'Saco Adesivo 14x18 + 5cm', categoria: 'Embalagens', custoUnitario: 0.40 },
-      { id: 'm6', nome: 'Sacola Kraft 16x10.5x27', categoria: 'Embalagens', custoUnitario: 1.20 },
-      { id: 'm7', nome: 'Sacola Preta Plástica M-20', categoria: 'Embalagens', custoUnitario: 0.50 },
-      { id: 'm8', nome: 'Argola de Chaveiro com Corrente', categoria: 'Acessórios', custoUnitario: 0.35 },
-      { id: 'm9', nome: 'Mecanismo Clicker / Fidget', categoria: 'Mecanismos', custoUnitario: 1.50 },
-      { id: 'm10', nome: 'Ímã de Neodímio 6x2mm / 6x3mm', categoria: 'Fixação', custoUnitario: 0.60 },
-      { id: 'm11', nome: 'Caixa de Papelão Padronizada', categoria: 'Embalagens', custoUnitario: 2.80 },
-      { id: 'm12', nome: 'Tag de Agradecimento + Fita', categoria: 'Embalagens', custoUnitario: 0.30 }
+      { id: 'm1', nome: 'Argola de Chaveiro com Corrente', categoria: 'Acessórios', custoUnitario: 0.35 },
+      { id: 'm2', nome: 'Mecanismo Clicker / Fidget', categoria: 'Mecanismos', custoUnitario: 1.50 },
+      { id: 'm3', nome: 'Ímã de Neodímio 6x2mm / 6x3mm', categoria: 'Fixação', custoUnitario: 0.60 },
+      { id: 'm4', nome: 'Caixa de Papelão Padronizada', categoria: 'Embalagens', custoUnitario: 2.80 },
+      { id: 'm5', nome: 'Saquinho Plástico / Ziplock', categoria: 'Embalagens', custoUnitario: 0.40 },
+      { id: 'm6', nome: 'Adesivo Maves Studio 3D', categoria: 'Brindes', custoUnitario: 0.25 },
+      { id: 'm7', nome: 'Tag de Agradecimento + Fita', categoria: 'Embalagens', custoUnitario: 0.30 }
     ];
 
     // EXEMPLOS INICIAIS DA LISTA DE PEDIDOS / INBOX
@@ -1248,27 +1243,7 @@
       console.warn('Firebase inicializado em modo local:', e);
     }
 
-    // DESANINHAMENTO SEGURO: desfaz colchetes duplos [[ ... ]] vindos do Firestore
-    function desaninharArray(arr) {
-      if (!Array.isArray(arr)) return [];
-      let res = arr;
-      while (res.length > 0 && Array.isArray(res[0]) && res.length === 1) {
-        res = res[0];
-      }
-      if (Array.isArray(res) && res.some(item => Array.isArray(item))) {
-        res = res.flat(2);
-      }
-      return res.filter(item => item && typeof item === 'object');
-    }
-
     function normalizarOrdensConcluidas() {
-      ordens = desaninharArray(ordens);
-      estoque = desaninharArray(estoque);
-      faturamento = desaninharArray(faturamento);
-      materiaisDiretos = desaninharArray(materiaisDiretos);
-      listaPedidos = desaninharArray(listaPedidos);
-      orcamentos = desaninharArray(orcamentos);
-
       ordens.forEach(op => {
         if (op.status === 'concluido') {
           if (!op.mesConclusao) op.mesConclusao = '2026-09';
@@ -1295,19 +1270,19 @@
       try {
         if (window.localStorage) {
           const ped = localStorage.getItem('maves_lista_pedidos_v1');
-          if (ped) listaPedidos = desaninharArray(JSON.parse(ped));
+          if (ped) listaPedidos = JSON.parse(ped);
           const e = localStorage.getItem('maves_estoque_v2');
-          if (e) estoque = desaninharArray(JSON.parse(e));
+          if (e) estoque = JSON.parse(e);
           const m = localStorage.getItem('maves_materiais_diretos_v2');
-          if (m) materiaisDiretos = desaninharArray(JSON.parse(m));
+          if (m) materiaisDiretos = JSON.parse(m);
           const orc = localStorage.getItem('maves_orcamentos_v1');
-          if (orc) orcamentos = desaninharArray(JSON.parse(orc));
+          if (orc) orcamentos = JSON.parse(orc);
           const o = localStorage.getItem('maves_ordens_v2');
-          if (o) ordens = desaninharArray(JSON.parse(o));
+          if (o) ordens = JSON.parse(o).filter(item => item.id !== 'op-1' && item.id !== 'op-2');
           const falhasSalvas = localStorage.getItem('maves_falhas_v1');
-          if (falhasSalvas) historicoFalhas = desaninharArray(JSON.parse(falhasSalvas));
+          if (falhasSalvas) historicoFalhas = JSON.parse(falhasSalvas);
           const f = localStorage.getItem('maves_faturamento_v5');
-          if (f) faturamento = desaninharArray(JSON.parse(f));
+          if (f) faturamento = JSON.parse(f);
         }
       } catch (err) {}
 
@@ -1320,51 +1295,13 @@
         docRef.onSnapshot((doc) => {
           if (doc.exists) {
             const data = doc.data();
-            
-            if (data.listaPedidos) {
-              const dPed = desaninharArray(data.listaPedidos);
-              if (dPed.length > 0) listaPedidos = dPed;
-            }
-            if (data.estoque) {
-              const dEst = desaninharArray(data.estoque);
-              if (dEst.length > 0) estoque = dEst;
-            }
-            if (data.materiaisDiretos) {
-              const dMat = desaninharArray(data.materiaisDiretos);
-              if (dMat.length > 0) materiaisDiretos = dMat;
-            }
-            if (data.orcamentos) orcamentos = desaninharArray(data.orcamentos);
-            if (data.ordens) {
-              const dOrd = desaninharArray(data.ordens);
-              if (dOrd.length > 0) ordens = dOrd;
-            }
-            if (data.faturamento) {
-              const dFat = desaninharArray(data.faturamento);
-              if (dFat.length > 0) faturamento = dFat;
-            }
-            if (data.historicoFalhas) historicoFalhas = desaninharArray(data.historicoFalhas);
-
-            // AUTO-RECUPERAÇÃO DE MATERIAIS USADOS NAS ORDENS DE PRODUÇÃO
-            ordens.forEach(op => {
-              if (op.materiaisUsados && Array.isArray(op.materiaisUsados)) {
-                op.materiaisUsados.forEach(mU => {
-                  if (mU.nome && !materiaisDiretos.some(m => m.nome === mU.nome)) {
-                    let cat = 'Embalagens';
-                    let custo = 0.35;
-                    if (mU.nome.toLowerCase().includes('adesivo')) { cat = 'Brindes'; custo = 0.25; }
-                    else if (mU.nome.toLowerCase().includes('sacola kraft')) { cat = 'Embalagens'; custo = 1.20; }
-                    else if (mU.nome.toLowerCase().includes('sacola')) { cat = 'Embalagens'; custo = 0.50; }
-                    else if (mU.nome.toLowerCase().includes('saco')) { cat = 'Embalagens'; custo = 0.25; }
-                    materiaisDiretos.push({
-                      id: 'm-' + Date.now() + '-' + Math.random().toString(36).substr(2, 4),
-                      nome: mU.nome,
-                      categoria: cat,
-                      custoUnitario: custo
-                    });
-                  }
-                });
-              }
-            });
+            if (data.listaPedidos && data.listaPedidos.length > 0) listaPedidos = data.listaPedidos;
+            if (data.estoque && data.estoque.length > 0) estoque = data.estoque;
+            if (data.materiaisDiretos && data.materiaisDiretos.length > 0) materiaisDiretos = data.materiaisDiretos;
+            if (data.orcamentos) orcamentos = data.orcamentos;
+            if (data.ordens) ordens = data.ordens.filter(item => item.id !== 'op-1' && item.id !== 'op-2');
+            if (data.faturamento) faturamento = data.faturamento;
+            if (data.historicoFalhas) historicoFalhas = data.historicoFalhas;
 
             normalizarOrdensConcluidas();
 
@@ -1408,25 +1345,25 @@
       normalizarOrdensConcluidas();
       try {
         if (window.localStorage) {
-          localStorage.setItem('maves_lista_pedidos_v1', JSON.stringify(desaninharArray(listaPedidos)));
-          localStorage.setItem('maves_estoque_v2', JSON.stringify(desaninharArray(estoque)));
-          localStorage.setItem('maves_materiais_diretos_v2', JSON.stringify(desaninharArray(materiaisDiretos)));
-          localStorage.setItem('maves_orcamentos_v1', JSON.stringify(desaninharArray(orcamentos)));
-          localStorage.setItem('maves_ordens_v2', JSON.stringify(desaninharArray(ordens)));
-          localStorage.setItem('maves_faturamento_v5', JSON.stringify(desaninharArray(faturamento)));
-          localStorage.setItem('maves_falhas_v1', JSON.stringify(desaninharArray(historicoFalhas)));
+          localStorage.setItem('maves_lista_pedidos_v1', JSON.stringify(listaPedidos));
+          localStorage.setItem('maves_estoque_v2', JSON.stringify(estoque));
+          localStorage.setItem('maves_materiais_diretos_v2', JSON.stringify(materiaisDiretos));
+          localStorage.setItem('maves_orcamentos_v1', JSON.stringify(orcamentos));
+          localStorage.setItem('maves_ordens_v2', JSON.stringify(ordens));
+          localStorage.setItem('maves_faturamento_v5', JSON.stringify(faturamento));
+          localStorage.setItem('maves_falhas_v1', JSON.stringify(historicoFalhas));
         }
       } catch (err) {}
 
       if (docRef) {
         const payload = {
-          listaPedidos: desaninharArray(listaPedidos),
-          estoque: desaninharArray(estoque),
-          materiaisDiretos: desaninharArray(materiaisDiretos),
-          orcamentos: desaninharArray(orcamentos),
-          ordens: desaninharArray(ordens),
-          faturamento: desaninharArray(faturamento),
-          historicoFalhas: desaninharArray(historicoFalhas),
+          listaPedidos,
+          estoque,
+          materiaisDiretos,
+          orcamentos,
+          ordens,
+          faturamento,
+          historicoFalhas,
           atualizadoEm: new Date().toISOString()
         };
         docRef.set(payload, { merge: true }).catch(err => console.warn('Erro ao sincronizar nuvem:', err));
@@ -1437,17 +1374,7 @@
     }
 
     function exportarBackup() {
-      const backup = { 
-        listaPedidos: desaninharArray(listaPedidos), 
-        estoque: desaninharArray(estoque), 
-        materiaisDiretos: desaninharArray(materiaisDiretos), 
-        orcamentos: desaninharArray(orcamentos), 
-        ordens: desaninharArray(ordens), 
-        faturamento: desaninharArray(faturamento), 
-        historicoFalhas: desaninharArray(historicoFalhas), 
-        filamentosProjetoAtual, 
-        data: new Date().toISOString() 
-      };
+      const backup = { listaPedidos, estoque, materiaisDiretos, orcamentos, ordens, faturamento, historicoFalhas, filamentosProjetoAtual, data: new Date().toISOString() };
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
       const dlAnchor = document.createElement('a');
       dlAnchor.setAttribute("href", dataStr);
@@ -1464,13 +1391,13 @@
       reader.onload = function(e) {
         try {
           const dados = JSON.parse(e.target.result);
-          if (dados.listaPedidos) listaPedidos = desaninharArray(dados.listaPedidos);
-          if (dados.estoque) estoque = desaninharArray(dados.estoque);
-          if (dados.materiaisDiretos) materiaisDiretos = desaninharArray(dados.materiaisDiretos);
-          if (dados.orcamentos) orcamentos = desaninharArray(dados.orcamentos);
-          if (dados.ordens) ordens = desaninharArray(dados.ordens);
-          if (dados.faturamento) faturamento = desaninharArray(dados.faturamento);
-          if (dados.historicoFalhas) historicoFalhas = desaninharArray(dados.historicoFalhas);
+          if (dados.listaPedidos) listaPedidos = dados.listaPedidos;
+          if (dados.estoque) estoque = dados.estoque;
+          if (dados.materiaisDiretos) materiaisDiretos = dados.materiaisDiretos;
+          if (dados.orcamentos) orcamentos = dados.orcamentos;
+          if (dados.ordens) ordens = dados.ordens;
+          if (dados.faturamento) faturamento = dados.faturamento;
+          if (dados.historicoFalhas) historicoFalhas = dados.historicoFalhas;
           if (dados.filamentosProjetoAtual) filamentosProjetoAtual = dados.filamentosProjetoAtual;
           normalizarOrdensConcluidas();
           salvarDados();
@@ -2221,7 +2148,7 @@
         ? `\n📦 *Itens Inclusos (por un):* ` + materiaisPecaAtual.map(m => `${m.qtd}x ${m.nome}`).join(', ')
         : '';
 
-      const texto = `*ORÇAMENTO - MAVES STUDIO 3D* 🚀\n----------------------------------------\n📌 *Item:* ${nome}\n${cliente ? `👤 *Cliente:* ${cliente}\n` : ''}🔢 *Quantidade:* ${qtd} unidade(s)\n🧵 *Filamentos:* ${filamentosStr}\n⏱️ *Tempo Total de Produção:* ${document.getElementById('calc-horas')?.value || 0}h ${document.getElementById('calc-minutos')?.value || 0}min\n💰 *Valor Unitário Sugerido:* R$ ${ultimoCalculo.precoSugeridoUnit.toFixed(2)}\n💵 *Valor Total do Lote:* R$ ${ultimoCalculo.precoSugeridoTotal.toFixed(2)}${insumosStr}\n----------------------------------------\n*Garantia de acabamento e precisão técnica Maves.*`;
+      const texto = `*ORÇAMENTO - MAVES STUDIO 3D* 🚀\n----------------------------------------\n📌 *Item:* ${nome}\n${cliente ? `👤 *Cliente:* ${cliente}\n` : ''}🔢 *Quantidade:* ${qtd} unidade(s)\n🧵 *Filamentos:* ${filamentosStr}\n⏱️ *Tempo Total de Produção:* ${document.getElementById('calc-horas')?.value || 0}h ${document.getElementById('calc-minutos')?.value || 0}min\n💰 *Valor Unitário Sugerido:* R$ ${ultimoCalculo.precoSugeridoUnit.toFixed(2)}\\n💵 *Valor Total do Lote:* R$ ${ultimoCalculo.precoSugeridoTotal.toFixed(2)}${insumosStr}\n----------------------------------------\n*Garantia de acabamento e precisão técnica Maves.*`;
       navigator.clipboard.writeText(texto);
       alert('✓ Orçamento detalhado copiado para o WhatsApp!');
     }
@@ -3692,7 +3619,17 @@
       alert('✓ Senha alterada com sucesso! Use a nova senha nos próximos acessos.');
     }
 
-    // Chama verificação de autenticação no carregamento
+    // INICIALIZAÇÃO
+    carregarDados();
+    renderListaPedidos();
+    preencherSelectFilamentosDisponiveis();
+    preencherSelectMateriaisDisponiveis();
+    restaurarRascunhoCalculadora();
+    renderListaFilamentosProjeto();
+    renderListaMateriaisPeca();
+    calcularTudo();
+    atualizarBadgeOrcamentos();
+    atualizarBadgePedidos();
     verificarAutenticacao();
   </script>
 </body>
