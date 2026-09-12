@@ -1932,10 +1932,11 @@
     }
 
     function salvarOrcamentoMultiItemFinal() {
-      const cliente = document.getElementById('multi-cliente')?.value.trim() || 'Cliente'; um item ao orçamento.');
+      const cliente = document.getElementById('multi-cliente')?.value.trim() || 'Cliente';
+      if (itensOrcamentoMultiAtual.length === 0) {
+        alert('Adicione ao menos um item ao orçamento.');
         return;
       }
-
       const precoRealTotal = parseFloat(document.getElementById('multi-input-preco-real')?.value) || calculoMultiAtual.precoSugeridoTotal;
       const canal = document.getElementById('multi-canal')?.value || 'pix';
       const totalQtd = itensOrcamentoMultiAtual.reduce((acc, i) => acc + i.qtd, 0);
@@ -2069,7 +2070,7 @@
 
       const orcsFiltrados = filtroStatus === 'todos'
         ? orcamentos
-        : orcamentos.filter(o =>Aqui está a implementação completa e com **100% de retrocompatibilidade garantida**. 
+        : orcamentos.filter(o => o.status === filtroStatus);
 
 ### O que foi implementado e como funciona:
 
@@ -5330,7 +5331,31 @@ Copie o código abaixo e substitua o conteúdo do seu arquivo HTML:
         if (msgErro) msgErro.classList.remove('hidden');
       }
     }
+async function desbloquearSistema() {
+      const input = document.getElementById('input-senha-acesso');
+      const msgErro = document.getElementById('msg-erro-senha');
+      const lembrarCheck = document.getElementById('check-lembrar-senha');
+      const tela = document.getElementById('tela-bloqueio');
 
+      const senhaDigitada = (input?.value || '').trim();
+
+      if (senhaDigitada === 'maves3d') {
+        sessionStorage.setItem('maves_auth_ativo', 'true');
+        if (lembrarCheck && lembrarCheck.checked) {
+          localStorage.setItem('maves_auth_lembrar', 'true');
+        } else {
+          localStorage.removeItem('maves_auth_lembrar');
+        }
+        if (msgErro) msgErro.classList.add('hidden');
+        if (tela) {
+          tela.style.display = 'none';
+          tela.classList.add('hidden');
+        }
+      } else {
+        if (msgErro) msgErro.classList.remove('hidden');
+      }
+    }
+    
     function alternarVisibilidadeSenha() {
       const input = document.getElementById('input-senha-acesso');
       if (!input) return;
