@@ -1568,7 +1568,7 @@
     const nomeModelo = prompt('Dê um nome para este MODELO reutilizável:\n(ex: "Mini Jesus 4cm PETG Branco", "Letreiro P", "Chaveiro Clicker")', nomeSugerido);
     if (!nomeModelo || !nomeModelo.trim()) return;
 
-    const jaExiste = catalogoProdutos.find(m => m.nomeModelo.toLowerCase() === nomeModelo.trim().toLowerCase());
+    const jaExiste = catalogoProdutos.find(m => m && m.nomeModelo && m.nomeModelo.toLowerCase() === nomeModelo.trim().toLowerCase());
     if (jaExiste && !confirm(`Já existe "${nomeModelo}". Deseja sobrescrever?`)) return;
 
     const modelo = {
@@ -1635,17 +1635,30 @@
       sel.innerHTML = '<option value="">Nenhum modelo salvo ainda</option>';
       return;
     }
-    sel.innerHTML = '<option value="">📁 Carregar produto salvo...</option>' +
-      catalogoProdutos.map(m => {
-        const q = m.config.quantidade || 1;
-        const g = (m.config.filamentos || []).reduce((a, f) => a + (f.massaG || 0), 0);
-        return `<option value="${m.id}">${m.nomeModelo} • ${q}un • ${g}g • ${m.vezesUsado || 0}x usado</option>`;
-      }).join('');
+    const validos = catalogoProdutos.filter(modeloValido);
+sel.innerHTML = '<option value="">📁 Carregar produto salvo...</option>' +
+  validos.map(m => {
+    const q = m.config.quantidade || 1;
+    const g = (m.config.filamentos || []).reduce((a, f) => a + (f.massaG || 0), 0);
+    return `<option value="${m.id}">${m.nomeModelo} • ${q}un • ${g}g • ${m.vezesUsado || 0}x usado</option>`;
+  }).join('');
   }
+function modeloValido(m) {
+  return m && typeof m === 'object' && m.nomeModelo && m.config && Array.isArray(m.config.filamentos);
+}
 
+function limparCatalogoInvalido() {
+  const antes = catalogoProdutos.length;
+  catalogoProdutos = catalogoProdutos.filter(modeloValido);
+  const removidos = antes - catalogoProdutos.length;
+  if (removidos > 0) {
+    console.warn(`🧹 ${removidos} modelo(s) inválido(s) removido(s) do catálogo.`);
+    salvarDados();
+  }
+}
   function renderCatalogoProdutos() {
-    const container = document.getElementById('catalogo-produtos-container');
-    if (!container) return;
+  limparCatalogoInvalido();   // ⭐ NOVO — remove itens corrompidos antes de renderizar
+  const container = document.getElementById('catalogo-produtos-container');
 
     if (catalogoProdutos.length === 0) {
       container.innerHTML = `<div class="text-[11px] text-slate-500 italic p-3 bg-surface-base/50 rounded-xl border border-slate-800/60 col-span-full">Nenhum modelo salvo ainda. Calcule uma peça e clique em "💾 Salvar como Modelo".</div>`;
