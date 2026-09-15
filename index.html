@@ -164,6 +164,25 @@
 
   <!-- ÁREA PRINCIPAL -->
   <main class="flex-1 p-4 md:p-8 overflow-y-auto max-w-7xl mx-auto w-full">
+        <!-- ⭐ NOVO: BANNER DE BACKUP VENCIDO -->
+    <div id="banner-backup-vencido" class="hidden mb-5 bg-gradient-to-r from-amber-950/60 to-rose-950/40 border border-amber-600/40 rounded-2xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-lg">
+      <div class="flex items-start sm:items-center gap-3">
+        <div class="h-10 w-10 rounded-xl bg-amber-500/20 border border-amber-500/40 flex items-center justify-center text-xl shrink-0">🛡️</div>
+        <div>
+          <h3 class="text-sm font-bold text-amber-200">Proteja seus dados</h3>
+          <p data-banner-msg class="text-xs text-amber-100/80">Você ainda não fez backup.</p>
+        </div>
+      </div>
+      <div class="flex items-center gap-2 w-full sm:w-auto">
+        <button type="button" onclick="exportarBackup()" class="flex-1 sm:flex-none bg-gradient-to-r from-amber-600 to-amber-500 hover:from-amber-500 hover:to-amber-400 text-white font-bold px-4 py-2.5 rounded-xl text-xs transition-all shadow-lg flex items-center justify-center gap-1.5 whitespace-nowrap">
+          <span>💾</span> Exportar Backup Agora
+        </button>
+        <button type="button" onclick="abrirCentralBackups()" class="bg-surface-card hover:bg-slate-800 border border-slate-700/60 text-slate-300 px-3.5 py-2.5 rounded-xl text-xs font-semibold transition-all whitespace-nowrap">
+          📊 Histórico
+        </button>
+        <button type="button" onclick="dispensarBannerBackup()" class="text-slate-400 hover:text-slate-200 p-2 text-sm" title="Lembrar em 24h">✕</button>
+      </div>
+    </div>
 
     <!-- ========== ABA: PEDIDOS ========== -->
     <section id="sec-pedidos" class="space-y-6">
@@ -723,7 +742,40 @@
         </div>
       </div>
     </section>
+    <!-- ⭐ NOVO: MODAL CENTRAL DE BACKUPS -->
+    <div id="modal-central-backups" class="hidden fixed inset-0 z-50 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+      <div class="bg-surface-card border border-slate-800 rounded-3xl p-6 max-w-lg w-full shadow-2xl space-y-4 max-h-[85vh] overflow-y-auto">
+        <div class="flex justify-between items-center border-b border-slate-800/80 pb-3">
+          <div class="flex items-center gap-2">
+            <span class="text-lg">📊</span>
+            <h2 class="text-sm font-bold uppercase tracking-wider text-slate-200">Central de Backups</h2>
+          </div>
+          <button type="button" onclick="fecharCentralBackups()" class="text-slate-400 hover:text-slate-200 text-lg">✕</button>
+        </div>
 
+        <div class="bg-indigo-950/30 border border-indigo-500/20 rounded-xl p-3 text-xs text-indigo-200 space-y-1">
+          <p class="font-bold flex items-center gap-1.5">💡 Como proteger seus dados</p>
+          <p class="text-indigo-100/80 text-[11px] leading-relaxed">
+            Exporte um backup toda semana e salve em <strong>Google Drive</strong>, <strong>OneDrive</strong> ou e-mail.
+            Mantenha os últimos 8-12 arquivos. Se tudo der errado, você restaura em 1 clique.
+          </p>
+        </div>
+
+        <div class="space-y-2">
+          <h3 class="text-xs font-bold text-slate-300 uppercase">Últimos 5 backups exportados</h3>
+          <div id="lista-historico-backups" class="space-y-2"></div>
+        </div>
+
+        <div class="pt-3 border-t border-slate-800/80 grid grid-cols-2 gap-2">
+          <button type="button" onclick="fecharCentralBackups(); exportarBackup();" class="bg-indigo-600 hover:bg-indigo-500 text-white font-semibold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+            <span>💾</span> Novo Backup
+          </button>
+          <button type="button" onclick="fecharCentralBackups(); document.getElementById('import-file').click();" class="bg-surface-subtle hover:bg-slate-800 border border-slate-700/60 text-slate-200 font-semibold py-2.5 rounded-xl text-xs transition-all flex items-center justify-center gap-1.5">
+            <span>📂</span> Restaurar
+          </button>
+        </div>
+      </div>
+    </div>
   </main>
 
   <script>
@@ -933,52 +985,292 @@
     atualizarBadgePedidos();
   }
 
-  function exportarBackup() {
-    const backup = { listaPedidos, estoque, materiaisDiretos, orcamentos, ordens, faturamento, historicoFalhas, filamentosProjetoAtual, catalogoProdutos, data: new Date().toISOString() };
-    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(backup, null, 2));
-    const a = document.createElement('a');
-    a.setAttribute("href", dataStr);
-    a.setAttribute("download", `maves_erp_backup_${new Date().toISOString().slice(0,10)}.json`);
-    document.body.appendChild(a); a.click(); a.remove();
+  /* ============================================================
+   BACKUP PROFISSIONAL v1 — Exportar, Validar, Histórico
+   ============================================================ */
+
+function montarPayloadBackup() {
+  return {
+    _meta: {
+      app: 'Maves Studio 3D ERP',
+      versao: '3.0',
+      geradoEm: new Date().toISOString(),
+      geradoEmBR: new Date().toLocaleString('pt-BR'),
+      totalRegistros: {
+        pedidos: listaPedidos.length,
+        orcamentos: orcamentos.length,
+        ordens: ordens.length,
+        faturamento: faturamento.length,
+        estoque: estoque.length,
+        materiais: materiaisDiretos.length,
+        modelos: catalogoProdutos.length,
+        falhas: historicoFalhas.length
+      }
+    },
+    listaPedidos, estoque, materiaisDiretos, orcamentos, ordens,
+    faturamento, historicoFalhas, filamentosProjetoAtual, catalogoProdutos,
+    rascunhoCalculadora: (function(){ try { return JSON.parse(localStorage.getItem('maves_calc_rascunho_v1') || 'null'); } catch(e){ return null; } })()
+  };
+}
+
+function gerarNomeArquivoBackup() {
+  const d = new Date();
+  const pad = n => String(n).padStart(2,'0');
+  return `maves_backup_${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}_${pad(d.getHours())}-${pad(d.getMinutes())}.json`;
+}
+
+    function abrirCentralBackups() {
+  const modal = document.getElementById('modal-central-backups');
+  const lista = document.getElementById('lista-historico-backups');
+  if (!modal || !lista) return;
+
+  let historico = [];
+  try { historico = JSON.parse(localStorage.getItem('maves_backup_historico') || '[]'); } catch(e) {}
+
+  if (historico.length === 0) {
+    lista.innerHTML = '<div class="text-xs text-slate-500 italic p-3 bg-surface-base/50 rounded-xl border border-slate-800">Nenhum backup foi exportado ainda neste navegador.</div>';
+  } else {
+    lista.innerHTML = historico.map((h, i) => `
+      <div class="bg-surface-base border border-slate-800 rounded-xl p-3 flex justify-between items-center gap-2">
+        <div class="min-w-0 flex-1">
+          <p class="text-xs font-mono font-bold text-white truncate">${h.nome}</p>
+          <p class="text-[10px] text-slate-500 font-mono">${h.data} • ${h.kb} KB</p>
+          <p class="text-[10px] text-indigo-400 font-mono">${h.registros?.orcamentos || 0} orç • ${h.registros?.ordens || 0} ordens • ${h.registros?.modelos || 0} modelos</p>
+        </div>
+        ${i === 0 ? '<span class="text-[10px] bg-emerald-500/10 text-emerald-400 border border-emerald-500/30 px-2 py-0.5 rounded-md font-mono font-bold whitespace-nowrap">MAIS RECENTE</span>' : ''}
+      </div>
+    `).join('');
   }
 
-  function importarBackup(event) {
-    const file = event.target.files[0];
-    if (!file) return;
-    const reader = new FileReader();
-    reader.onload = function(e) {
-      try {
-        const dados = JSON.parse(e.target.result);
-        if (dados.listaPedidos) listaPedidos = dados.listaPedidos;
-        if (dados.estoque) estoque = dados.estoque;
-        if (dados.materiaisDiretos) materiaisDiretos = dados.materiaisDiretos;
-        if (dados.orcamentos) orcamentos = dados.orcamentos;
-        if (dados.ordens) ordens = dados.ordens;
-        if (dados.faturamento) faturamento = dados.faturamento;
-        if (dados.historicoFalhas) historicoFalhas = dados.historicoFalhas;
-        if (dados.filamentosProjetoAtual) filamentosProjetoAtual = dados.filamentosProjetoAtual;
-        // ⭐ NOVO
-        if (dados.catalogoProdutos) catalogoProdutos = dados.catalogoProdutos;
-        normalizarOrdensConcluidas();
-        salvarDados();
-        renderListaPedidos();
-        preencherSelectFilamentosDisponiveis();
-        preencherSelectMateriaisDisponiveis();
-        renderEstoque();
-        renderMateriaisDiretos();
-        renderListaFilamentosProjeto();
-        renderOrcamentos();
-        renderKanban();
-        renderFinanceiro();
-        renderCatalogoProdutos();
-        renderSelectCarregarModelo();
-        renderComboItens();
-        calcularTudo();
-        alert('✓ Dados restaurados!');
-      } catch(err) { alert('Erro: arquivo inválido.'); }
-    };
-    reader.readAsText(file);
+  modal.classList.remove('hidden');
+}
+
+function fecharCentralBackups() {
+  const modal = document.getElementById('modal-central-backups');
+  if (modal) modal.classList.add('hidden');
+}
+function exportarBackup() {
+  const backup = montarPayloadBackup();
+  const nomeArquivo = gerarNomeArquivoBackup();
+  const conteudo = JSON.stringify(backup, null, 2);
+
+  // ⚠️ Aviso se o arquivo é grande
+  const kb = (conteudo.length / 1024).toFixed(1);
+
+  const confirmou = confirm(
+    `💾 EXPORTAR BACKUP\n\n` +
+    `Arquivo: ${nomeArquivo}\n` +
+    `Tamanho: ${kb} KB\n\n` +
+    `📦 Conteúdo:\n` +
+    `• ${backup._meta.totalRegistros.pedidos} pedidos\n` +
+    `• ${backup._meta.totalRegistros.orcamentos} orçamentos\n` +
+    `• ${backup._meta.totalRegistros.ordens} ordens\n` +
+    `• ${backup._meta.totalRegistros.estoque} filamentos\n` +
+    `• ${backup._meta.totalRegistros.modelos} modelos salvos\n` +
+    `• ${backup._meta.totalRegistros.materiais} materiais diretos\n\n` +
+    `Deseja baixar agora?`
+  );
+  if (!confirmou) return;
+
+  const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(conteudo);
+  const a = document.createElement('a');
+  a.setAttribute("href", dataStr);
+  a.setAttribute("download", nomeArquivo);
+  document.body.appendChild(a); a.click(); a.remove();
+
+  // Registra no histórico interno
+  registrarBackupNoHistorico(nomeArquivo, kb, backup._meta.totalRegistros);
+  atualizarBannerBackup();
+
+  // Salva timestamp do último backup
+  localStorage.setItem('maves_ultimo_backup_data', new Date().toISOString());
+  localStorage.setItem('maves_ultimo_backup_nome', nomeArquivo);
+
+  setTimeout(() => {
+    alert(
+      `✅ Backup exportado!\n\n` +
+      `📁 Arquivo: ${nomeArquivo}\n\n` +
+      `💡 DICA: Salve em Google Drive / OneDrive para ter cópia externa.\n` +
+      `Mantenha os últimos 8-12 arquivos (rotação semanal).`
+    );
+  }, 300);
+}
+
+function registrarBackupNoHistorico(nome, kb, registros) {
+  try {
+    let historico = JSON.parse(localStorage.getItem('maves_backup_historico') || '[]');
+    historico.unshift({
+      nome,
+      kb,
+      registros,
+      data: new Date().toLocaleString('pt-BR')
+    });
+    historico = historico.slice(0, 5); // mantém últimos 5
+    localStorage.setItem('maves_backup_historico', JSON.stringify(historico));
+  } catch(e) {}
+}
+
+function atualizarBannerBackup() {
+  const banner = document.getElementById('banner-backup-vencido');
+  if (!banner) return;
+
+  const ultimo = localStorage.getItem('maves_ultimo_backup_data');
+  if (!ultimo) {
+    banner.classList.remove('hidden');
+    banner.querySelector('[data-banner-msg]').innerText = '⚠️ Você nunca fez um backup. Clique em "Exportar Backup Agora" para proteger seus dados.';
+    return;
   }
+
+  const diasDesde = Math.floor((Date.now() - new Date(ultimo).getTime()) / (1000 * 60 * 60 * 24));
+
+  if (diasDesde >= 7) {
+    banner.classList.remove('hidden');
+    banner.querySelector('[data-banner-msg]').innerText = `⚠️ Último backup há ${diasDesde} dias (${new Date(ultimo).toLocaleDateString('pt-BR')}). Faça um novo agora para não arriscar.`;
+  } else {
+    banner.classList.add('hidden');
+  }
+}
+
+function dispensarBannerBackup() {
+  const banner = document.getElementById('banner-backup-vencido');
+  if (banner) banner.classList.add('hidden');
+  // Reaparece em 24h
+  localStorage.setItem('maves_banner_backup_snooze', new Date().toISOString());
+}
+
+function verificarSnoozeBanner() {
+  const snooze = localStorage.getItem('maves_banner_backup_snooze');
+  if (!snooze) return false;
+  const horas = (Date.now() - new Date(snooze).getTime()) / (1000 * 60 * 60);
+  return horas < 24;
+}
+
+  function importarBackup(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  // Validação 1 — extensão
+  if (!file.name.toLowerCase().endsWith('.json')) {
+    alert('❌ Arquivo inválido: precisa ser um arquivo .json exportado pelo ERP Maves.');
+    event.target.value = '';
+    return;
+  }
+
+  // Validação 2 — tamanho mínimo
+  if (file.size < 50) {
+    alert('❌ Arquivo muito pequeno ou vazio. Verifique se é o backup correto.');
+    event.target.value = '';
+    return;
+  }
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    let dados;
+    try {
+      dados = JSON.parse(e.target.result);
+    } catch (err) {
+      alert('❌ Arquivo corrompido ou inválido.\n\nO JSON não pôde ser lido. Tente outro arquivo de backup.');
+      event.target.value = '';
+      return;
+    }
+
+    // Validação 3 — estrutura mínima
+    const temAlgumDado = ['listaPedidos','estoque','materiaisDiretos','orcamentos','ordens','faturamento','catalogoProdutos'].some(k => Array.isArray(dados[k]) && dados[k].length > 0);
+
+    if (!temAlgumDado) {
+      alert('❌ O arquivo está vazio — não contém nenhum pedido, orçamento, modelo ou filamento.\n\nBackups válidos têm pelo menos alguns registros.');
+      event.target.value = '';
+      return;
+    }
+
+    // Prévia do que será restaurado
+    const meta = dados._meta || {};
+    const total = meta.totalRegistros || {};
+    const dataBackup = meta.geradoEmBR || '(data desconhecida)';
+
+    const resumo =
+      `📂 CONFIRMAR RESTAURAÇÃO\n\n` +
+      `Arquivo gerado em: ${dataBackup}\n\n` +
+      `📦 Este backup contém:\n` +
+      `• ${dados.listaPedidos?.length || 0} pedidos\n` +
+      `• ${dados.orcamentos?.length || 0} orçamentos\n` +
+      `• ${dados.ordens?.length || 0} ordens\n` +
+      `• ${dados.faturamento?.length || 0} lançamentos financeiros\n` +
+      `• ${dados.estoque?.length || 0} filamentos\n` +
+      `• ${dados.catalogoProdutos?.length || 0} modelos salvos\n` +
+      `• ${dados.materiaisDiretos?.length || 0} materiais diretos\n\n` +
+      `⚠️ ATENÇÃO: Os dados ATUAIS serão substituídos pelos do backup.\n\n` +
+      `Deseja continuar?`;
+
+    if (!confirm(resumo)) {
+      event.target.value = '';
+      return;
+    }
+
+    // Faz um backup automático dos dados atuais ANTES de sobrescrever (segurança)
+    try {
+      const backupSeguranca = montarPayloadBackup();
+      localStorage.setItem('maves_auto_pre_restore', JSON.stringify(backupSeguranca));
+      console.log('✓ Backup automático dos dados atuais guardado em maves_auto_pre_restore');
+    } catch(e) {}
+
+    // Restaura
+    try {
+      if (dados.listaPedidos) listaPedidos = dados.listaPedidos;
+      if (dados.estoque) estoque = dados.estoque;
+      if (dados.materiaisDiretos) materiaisDiretos = dados.materiaisDiretos;
+      if (dados.orcamentos) orcamentos = dados.orcamentos;
+      if (dados.ordens) ordens = dados.ordens;
+      if (dados.faturamento) faturamento = dados.faturamento;
+      if (dados.historicoFalhas) historicoFalhas = dados.historicoFalhas;
+      if (dados.filamentosProjetoAtual) filamentosProjetoAtual = dados.filamentosProjetoAtual;
+      if (dados.catalogoProdutos) catalogoProdutos = dados.catalogoProdutos;
+      if (dados.rascunhoCalculadora) {
+        localStorage.setItem('maves_calc_rascunho_v1', JSON.stringify(dados.rascunhoCalculadora));
+      }
+
+      normalizarOrdensConcluidas();
+      limparCatalogoInvalido();
+      salvarDados();
+
+      // Re-renderiza tudo
+      renderListaPedidos();
+      preencherSelectFilamentosDisponiveis();
+      preencherSelectMateriaisDisponiveis();
+      renderEstoque();
+      renderMateriaisDiretos();
+      renderListaFilamentosProjeto();
+      renderListaMateriaisPeca();
+      renderOrcamentos();
+      renderKanban();
+      renderFinanceiro();
+      renderCatalogoProdutos();
+      renderSelectCarregarModelo();
+      renderComboItens();
+      calcularTudo();
+      atualizarBadgeOrcamentos();
+      atualizarBadgePedidos();
+
+      alert(
+        `✅ RESTAURAÇÃO CONCLUÍDA!\n\n` +
+        `Todos os dados foram restaurados do arquivo.\n\n` +
+        `💡 Se algo deu errado, seus dados anteriores ainda estão salvos em "maves_auto_pre_restore" (fale comigo para recuperar).`
+      );
+    } catch (err) {
+      console.error(err);
+      alert('❌ Erro durante a restauração. Nenhum dado foi perdido — os dados anteriores continuam salvos.');
+    }
+
+    event.target.value = '';
+  };
+
+  reader.onerror = function() {
+    alert('❌ Erro ao ler o arquivo. Tente novamente.');
+    event.target.value = '';
+  };
+
+  reader.readAsText(file);
+}
 
   // ---------- NAVEGAÇÃO ----------
   function mudarAba(abaId) {
@@ -2833,6 +3125,10 @@ function limparCatalogoInvalido() {
   atualizarBadgeOrcamentos();
   atualizarBadgePedidos();
   verificarAutenticacao();
+      // ⭐ NOVO: verifica se precisa mostrar banner de backup
+  if (!verificarSnoozeBanner()) {
+    atualizarBannerBackup();
+  }
   </script>
 </body>
 </html>
